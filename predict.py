@@ -1,34 +1,33 @@
-import argparse
-from tensorflow import keras
-from PIL import Image
+import tensorflow as tf
 import numpy as np
+from tensorflow.keras.preprocessing import image
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Predict MNIST digit using trained model")
-    parser.add_argument("--model", required=True, help="Path to saved .keras model")
-    parser.add_argument("--image", required=True, help="Path to image file")
-    return parser.parse_args()
+# Load the trained model
+MODEL_PATH = "model.h5"
+model = tf.keras.models.load_model(MODEL_PATH)
 
-def preprocess_image(img_path):
-    img = Image.open(img_path).convert("RGB")
-    img = img.resize((96, 96))
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
+# Define image size (must match training settings)
+IMG_SIZE = (224, 224)  # adjust if you used a different size
 
-def main():
-    args = parse_args()
-    print(f"Loading model from {args.model}...")
-    model = keras.models.load_model(args.model)
+def predict_image(img_path):
+    """Predict the class of an input image."""
+    try:
+        # Load and preprocess the image
+        img = image.load_img(img_path, target_size=IMG_SIZE)
+        img_array = image.img_to_array(img) / 255.0  # normalize
+        img_array = np.expand_dims(img_array, axis=0)  # batch dimension
 
-    img_array = preprocess_image(args.image)
-    preds = model.predict(img_array)
+        # Make prediction
+        predictions = model.predict(img_array)
+        predicted_class = np.argmax(predictions, axis=1)[0]
+        confidence = np.max(predictions)
 
-    predicted_label = np.argmax(preds, axis=1)[0]
-    confidence = np.max(preds) * 100
+        print(f"Predicted class: {predicted_class}")
+        print(f"Confidence: {confidence:.2f}")
 
-    print(f"Predicted digit: {predicted_label}")
-    print(f"Confidence: {confidence:.2f}%")
+    except Exception as e:
+        print(f"Error during prediction: {e}")
 
 if __name__ == "__main__":
-    main()
+    img_path = input("Enter image path: ")
+    predict_image(img_path)
